@@ -1,0 +1,67 @@
+#!/bin/sh
+
+__cmd_get () {
+    local _noheader _valueonly _props_IFS _bak_IFS _opt _props _property _name \
+      _datasets _dataset _value _uuid
+
+    _noheader=0
+    _valueonly=0
+    _props_IFS=","  # The list of properties is comma-seperated
+    _bak_IFS="$IFS" # We backup $IFS
+
+    while getopts ":Ho:" _opt ; do
+        case ${_opt} in
+            "H") _noheader=1 ;;
+            "o") [ "${OPTARG}" == "value" ] && _valueonly=1 ;;
+            "?") __fatal_error "Invalid get option: -${OPTARG}" ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
+    _props="${1}"
+    shift
+
+    case ${2} in
+        ALL) : ;; # Same case as if no name was supplied
+        *)  for _name in "${@}" ; do
+                _datasets="$_datasets $(__find_jail ${_name})"
+            done ;;
+    esac
+
+    if [ "$_props" == "all" ] ; then
+        _props="${CONF_NET}
+                ${CONF_JAIL}
+                ${CONF_RCTL}
+                ${CONF_CUSTOM}
+                ${CONF_SYNC}
+                ${CONF_FTP}
+                ${CONF_ZFS}"
+        _props_IFS=" " # The list of properties is space-seperated
+    fi
+
+    {
+        [ ${_noheader} -eq 1 -o ${_valueonly} -eq 1 ] \
+          || printf "%s^%s^%s\n" "UUID" "PROP" "VALUE"
+
+        # ${_datasets} is empty if we didn't get names or got "ALL"
+        for _dataset in ${_datasets:-$(__find_jail_all)} ; do
+
+            IFS="$_props_IFS"
+            for _property in ${_props} ; do
+
+                __require_not_empty "${_property}" "Missing arguments!"
+                __require_single_word "${_property}" "Invalid property!"
+
+                IFS="$_bak_IFS"
+                _value="$(__get_jail_prop ${_property} ${_dataset})"
+                case ${_valueonly} in
+                    0)  _uuid=$(__get_dataset_ioc_prop host_hostuuid ${_dataset})
+                        printf "%s^%s^%s\n" "${_uuid}" "${_property}" "${_value}"
+                        ;;
+                    1)  printf "%s^\n" "${_value}" ;;
+                esac
+
+            done
+        done
+    } | column -ts^
+}

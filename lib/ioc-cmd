@@ -487,35 +487,18 @@ __cmd_fetch () {
     __fetch_release
 }
 
-__cmd_get () {
-    local _noheader _opt _property _name _dataset
+__cmd_init_host () {
+    local _remote _pool
 
-    _noheader=0
+    _remote=${1}
+    __require_not_empty "${_remote}" "Missing arguments!"
+    __require_single_word "${_remote}" "Invalid remote host!"
 
-    OPTIND=1
-    while getopts ":H" _opt ; do
-        case ${_opt} in
-            "H") _noheader=1 ;;
-            "?") __fatal_error "Invalid get option: -${OPTARG}" ;;
-        esac
-    done
-    shift $((OPTIND - 1))
+    _pool=${2}
+    __require_not_empty "${_pool}" "Missing pool name!"
+    __require_single_word "${_pool}" "Invalid pool name!"
 
-    _property=${1}
-    __require_not_empty "${_property}" "Missing arguments!"
-    __require_single_word "${_property}" "Invalid property!"
-
-    _name=${2:-"ALL"}
-    __check_name_all_default "${_name}"
-
-    if [ ${_name} = "ALL" ] ; then
-        __get_all_prop ${_noheader} ${_property}
-    else
-        _dataset=$(__find_jail ${_name})
-        __check_dataset "${_dataset}" ${_name}
-
-        __get_jail_prop ${_property} ${_dataset}
-    fi
+    __init_host ${_remote} ${_pool}
 }
 
 __cmd_inuse () {
@@ -705,19 +688,27 @@ __cmd_runtime () {
 }
 
 __cmd_set () {
-    local _property _name _dataset
+    local _bak_IFS _properties _name _dataset _property
 
-    _property=${1}
-    __require_not_empty "${_property}" "Missing arguments!"
+    _bak_IFS="$IFS"
+    _properties="${1}"
+    shift
+    __require_not_empty "${_properties}" "Missing arguments!"
 
-    _name=${2}
-    __check_name_default "${_name}"
+    for _name in "${@}" ; do
+        __check_name_default "${_name}"
 
-    _dataset=$(__find_jail ${_name})
-    __check_dataset "${_dataset}" ${_name}
+        _dataset=$(__find_jail ${_name})
+        __check_dataset "${_dataset}" ${_name}
 
-    __export_props "${@}"
-    __set_jail_prop "${_property}" ${_dataset}
+        __export_props "${@}"
+
+        IFS=","
+        for _property in ${_properties} ; do
+            IFS="${_bak_IFS}"
+            __set_jail_prop "${_property}" ${_dataset}
+        done
+    done
 }
 
 __cmd_show () {

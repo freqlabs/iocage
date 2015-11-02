@@ -254,6 +254,36 @@ __require_dataset_not_multiple () {
     [ "${_dataset}" != "multiple" ] || __fatal_error "${_description}"
 }
 
+# Is an item in a space-seperated list?
+#
+# ${1}: Argument to check for presence
+# other args: Arguments to check ${1} in
+__is_in_ssv () {
+    local _word _list _found _item
+
+    _word=${1}
+    shift
+    _list="${@}"
+    _found=0
+
+    for _item in ${_list} ; do
+        if [ ${_item} == ${_word} ] ; then
+            _found=1
+            return
+        fi
+    done
+
+    [ ${_found} -eq 1 ]
+}
+
+# Require that the first argument is in the second
+#
+# ${1}: Argument to check for presence
+# other args: Arguments to check ${1} in
+__require_in_ssv () {
+    __is_in_ssv "${@}" || __fatal_error "Not found: ${_word}"
+}
+
 # Check the validity of the given UUID or tag --------------------------
 #
 # ${1}: the UUID or tag to check
@@ -327,6 +357,60 @@ __check_dataset () {
     __require_dataset_single_word "${_dataset}" "${_name}"
 }
 
+# Check the validity of the given property -----------------------------
+#
+# ${1}: property to check for existence
+__check_prop_name () {
+    local _property _found _CONF _prop
+
+    _property=${1}
+    _found=0
+    _CONF="${CONF_NET}
+           ${CONF_JAIL}
+           ${CONF_RCTL}
+           ${CONF_CUSTOM}
+           ${CONF_SYNC}
+           ${CONF_FTP}
+           ${CONF_ZFS}"
+
+    __require_name_not_empty "${_property}"
+    __require_name_not_default "${_property}"
+    __require_name_single_word "${_property}"
+    __require_in_ssv "${_property}" ${_CONF}
+}
+
+# Translate a property name to a ZFS property --------------------------
+#
+# ${1}: a property
+__get_zfs_prop () {
+    local _found _property _CONF _prop
+
+    _found=0
+    _property=${1}
+    _CONF="${CONF_NET}
+           ${CONF_JAIL}
+           ${CONF_RCTL}
+           ${CONF_CUSTOM}
+           ${CONF_SYNC}
+           ${CONF_FTP}"
+
+    __check_prop_name ${_property}
+
+    if __is_in_ssv "${_property}" ${_CONF} ; then
+        _found=1
+        echo ${module}:${_property}
+        return
+    fi
+
+    if [ ${_found} -eq 0 ] ; then
+        if __is_in_ssv "${_property}" ${CONF_ZFS} ; then
+            _found=1
+            echo ${_property}
+            return
+        fi
+    fi
+}
+
 # Set properties -------------------------------------------------------
 __set_jail_prop () {
     local _property _dataset _pname _pval _CONF _prop _default
@@ -373,24 +457,18 @@ __set_jail_prop () {
            ${CONF_SYNC}
            ${CONF_FTP}"
 
-    for _prop in ${_CONF} ; do
-        if [ ${_prop} == ${_pname} ] ; then
-            __set_dataset_ioc_prop ${_prop}="${_pval}" ${_dataset}
-            return
-        fi
-    done
+    if __is_in_ssv "${_pname}" ${_CONF} ; then
+        __set_dataset_ioc_prop ${_prop}="${_pval}" ${_dataset}
+    fi
 
-    for _prop in ${CONF_ZFS} ; do
-        if [ ${_prop} == ${_pname} ] ; then
-            # We have a few properties that should be read-only through iocage.
-            eval _default=\$${_pname}
-            [ "${_default}" != "readonly" ] ||
-                __fatal_error "This property is read-only."
+    if __is_in_ssv "${_pname}" ${CONF_ZFS} ; then
+        # We have a few properties that should be read-only through iocage.
+        eval _default=\$${_pname}
+        [ "${_default}" != "readonly" ] ||
+            __fatal_error "This property is read-only."
 
-            __set_dataset_zfs_prop ${_prop}="${_pval}" ${_dataset}
-            return
-        fi
-    done
+        __set_dataset_zfs_prop ${_prop}="${_pval}" ${_dataset}
+    fi
 
     __fatal_error "Unsupported property: ${_pname}!"
 }
