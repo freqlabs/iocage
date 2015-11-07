@@ -29,7 +29,7 @@ unset LANG
 
 PATH=${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
-iocage_version="iocage gofast (2015/09/13)"
+iocage_version="iocage 1.7.2 gofast (2015/10/13)"
 
 if [ "${1}" = "--version" -o "${1}" = "version" ] ; then
     echo "${iocage_version}"
@@ -71,6 +71,7 @@ fi
 . "${LIB}/ioc-network"
 . "${LIB}/ioc-rctl"
 . "${LIB}/ioc-configure"
+. "${LIB}/ioc-get"
 . "${LIB}/ioc-hacks"
 
 if [ -z "$1" ] ; then
