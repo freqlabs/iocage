@@ -131,14 +131,14 @@ __list_jails () {
 
             # Print the short header.
             ??00)
-                printf "%s^%s^%s^%s^%s\n" \
-                       "JID" "UUID" "BOOT" "STATE" "TAG"
+                printf "%s^%s^%s^%s^%s^%s\n" \
+                       "JID" "UUID" "BOOT" "STATE" "TAG" "TYPE"
                 ;;
 
             # Print the long header.
             ??10)
-                printf "%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s\n" \
-                       "JID" "UUID" "BOOT" "STATE" "TAG" "IPV4" "IPV6" \
+                printf "%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s\n" \
+                       "JID" "UUID" "BOOT" "STATE" "TAG" "TYPE" "IPV4" "IPV6" \
                        "VNET" "TYPE" "INTERFACES" \
                        "VNET0_MAC" "VNET1_MAC" "VNET2_MAC" "VNET3_MAC"
                 ;;
@@ -183,8 +183,9 @@ __list_jails () {
             # {don't care}{don't care}{long list?}{don't care}
             case ${_switches} in
                 ??0?)
-                printf "%s^%s^%s^%s^%s\n" \
-                       "${_jid}" "${_uuid}" "${_boot}" "${_state}" "${_tag}"
+                printf "%s^%s^%s^%s^%s^%s\n" \
+                       "${_jid}" "${_uuid}" "${_boot}" "${_state}" "${_tag}" \
+                           "${_type}"
                 continue
                 ;;
             esac
@@ -208,9 +209,9 @@ __list_jails () {
                 _vnet3_mac="-"
             fi
 
-            printf "%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s\n" \
+            printf "%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s^%s\n" \
                    "${_jid}" "${_uuid}" "${_boot}" "${_state}" "${_tag}" \
-                   "${_ipv4}" "${_ipv6}" "${_vnet}" "${_type}" \
+                   "${_type}" "${_ipv4}" "${_ipv6}" "${_vnet}" "${_type}" \
                    "${_interfaces}" "${_vnet0_mac}" "${_vnet1_mac}" \
                    "${_vnet2_mac}" "${_vnet3_mac}"
 
