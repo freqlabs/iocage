@@ -495,8 +495,9 @@ __check_jails_ioc_version () {
     # This is only slightly complicated because the version string contains
     # parenthesis which must be escaped. Here's the play-by-play:
     #
-    # Find the dataset and the iocage version for each jail with a recursive
-    # zfs list and pipe it to our best friend, awk.
+    # Find the dataset and the iocage version for each jail, and pipe it to our
+    # best friend, awk. Recursion is limited to one level deep and the results
+    # are filtered to only include filesystem type datasets.
     #
     # Start awk by setting the variable version="${iocage_version}", then do a
     # global string substitution in the BEGIN action to escape the parenthesis
@@ -507,7 +508,7 @@ __check_jails_ioc_version () {
     #
     # If the line doesn't contain our version string, print the first field,
     # which gives us the dataset with a mismatched version.
-    _mismatches=$(zfs get -Hrd1 -o name,value \
+    _mismatches=$(zfs get -Hrd1 -t filesystem -o name,value \
                       ${module}:iocage_version \
                       ${pool}${iocroot}/jails \
                   | awk -v version="${iocage_version}" \
