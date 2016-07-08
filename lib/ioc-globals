@@ -99,7 +99,8 @@ shmsize="off"
 wallclock="off"
 
 # Supported releases
-supported_releases="10.2-RELEASE
+supported_releases="10.3-RELEASE
+                    10.2-RELEASE
                      9.3-RELEASE"
 
 # Custom properties
